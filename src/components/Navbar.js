@@ -7,7 +7,13 @@ import {
   Box,
   IconButton,
   Menu,
-  MenuItem
+  MenuItem,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  useMediaQuery
 } from '@mui/material';
 import {
   AccountCircle,
@@ -15,15 +21,21 @@ import {
   QrCodeScanner,
   Add,
   Update,
-  AdminPanelSettings
+  AdminPanelSettings,
+  Menu as MenuIcon
 } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../context/Web3Context';
 
 const Navbar = ({ userRole, setIsAuthenticated }) => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const { account, disconnectWallet } = useWeb3();
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -40,6 +52,10 @@ const Navbar = ({ userRole, setIsAuthenticated }) => {
     disconnectWallet();
     navigate('/login');
     handleClose();
+  };
+
+  const toggleDrawer = (open) => () => {
+    setDrawerOpen(open);
   };
 
   const getRoleBasedMenuItems = () => {
@@ -65,60 +81,138 @@ const Navbar = ({ userRole, setIsAuthenticated }) => {
     return [...commonItems, ...roleSpecificItems];
   };
 
-  return (
-    <AppBar position="static" sx={{ mb: 3 }}>
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Tea Supply Chain - {userRole}
-        </Typography>
-        
-        <Box sx={{ display: 'flex', gap: 2, mr: 2 }}>
-          {getRoleBasedMenuItems().map((item) => (
-            <Button
-              key={item.path}
-              color="inherit"
-              startIcon={item.icon}
-              onClick={() => navigate(item.path)}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </Box>
+  const menuItems = getRoleBasedMenuItems();
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" sx={{ mr: 1 }}>
-            {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Not Connected'}
+  return (
+    <>
+      <AppBar
+        position="static"
+        sx={{
+          mb: 3,
+          background: 'linear-gradient(to bottom right, #34d399, #10b981, #047857)',
+          color: '#ffffff',
+          boxShadow: 4
+        }}
+      >
+        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{ fontWeight: 'bold', letterSpacing: 1 }}
+          >
+            Tea Supply Chain - {userRole}
           </Typography>
-          <IconButton
-            size="large"
-            aria-label="account of current user"
-            aria-controls="menu-appbar"
-            aria-haspopup="true"
-            onClick={handleMenu}
-            color="inherit"
-          >
-            <AccountCircle />
-          </IconButton>
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-          >
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
-          </Menu>
-        </Box>
-      </Toolbar>
-    </AppBar>
+
+          {isMobile ? (
+            <>
+              <IconButton color="inherit" onClick={toggleDrawer(true)}>
+                <MenuIcon />
+              </IconButton>
+              <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
+                <Box
+                  sx={{
+                    width: 250,
+                    backgroundColor: '#ecfdf5',
+                    height: '100%',
+                    p: 2
+                  }}
+                  role="presentation"
+                  onClick={toggleDrawer(false)}
+                >
+                  <List>
+                    {menuItems.map((item) => (
+                      <ListItem
+                        button
+                        key={item.path}
+                        onClick={() => navigate(item.path)}
+                        sx={{
+                          '&:hover': { backgroundColor: 'rgba(16,185,129,0.2)' }
+                        }}
+                      >
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText
+                          primary={item.label}
+                          primaryTypographyProps={{ fontWeight: 'bold' }}
+                        />
+                      </ListItem>
+                    ))}
+                    <ListItem
+                      button
+                      onClick={handleLogout}
+                      sx={{
+                        mt: 2,
+                        '&:hover': { backgroundColor: 'rgba(220,38,38,0.1)' }
+                      }}
+                    >
+                      <ListItemIcon><AccountCircle /></ListItemIcon>
+                      <ListItemText
+                        primary="Logout"
+                        primaryTypographyProps={{ fontWeight: 'bold' }}
+                      />
+                    </ListItem>
+                  </List>
+                </Box>
+              </Drawer>
+            </>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {menuItems.map((item) => (
+                <Button
+                  key={item.path}
+                  sx={{
+                    color: '#ffffff',
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.1)'
+                    }
+                  }}
+                  startIcon={item.icon}
+                  onClick={() => navigate(item.path)}
+                >
+                  {item.label}
+                </Button>
+              ))}
+
+              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Not Connected'}
+              </Typography>
+              <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+              >
+                <AccountCircle />
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                keepMounted
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+              >
+                <MenuItem
+                  onClick={handleLogout}
+                  sx={{
+                    fontWeight: 'bold',
+                    '&:hover': {
+                      backgroundColor: 'rgba(16,185,129,0.2)'
+                    }
+                  }}
+                >
+                  Logout
+                </MenuItem>
+              </Menu>
+            </Box>
+          )}
+        </Toolbar>
+      </AppBar>
+    </>
   );
 };
 
